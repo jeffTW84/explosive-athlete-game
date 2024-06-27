@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>閃電反應 - 爆發力運動員訓練遊戲</title>
+    <title>專業反應時間訓練 - 爆發力運動員訓練遊戲</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,7 +24,8 @@
         }
         #game-container {
             width: 100%;
-            height: 300px;
+            height: 0;
+            padding-bottom: 150%; /* 高度為寬度的1.5倍 */
             background-color: #333;
             position: relative;
             overflow: hidden;
@@ -76,12 +77,12 @@
 </head>
 <body>
     <div id="game-area">
-        <h1>閃電反應</h1>
+        <h1>專業反應時間訓練</h1>
         <div id="score">分數: 0</div>
         <div id="time">時間: 30秒</div>
         <div id="avg-reaction-time">平均反應時間: 0 毫秒</div>
         <div id="game-container"></div>
-        <button id="start-btn">開始遊戲</button>
+        <button id="start-btn">開始訓練</button>
     </div>
 
     <script>
@@ -99,6 +100,8 @@
         let lastTargetTime;
 
         function createTarget() {
+            if (targets.length >= 2) return; // 限制最多2個目標
+
             const target = document.createElement('div');
             target.className = 'target';
             target.style.backgroundColor = getRandomColor();
@@ -119,8 +122,9 @@
         }
 
         function positionTarget(target) {
-            const maxX = gameContainer.clientWidth - parseInt(target.style.width);
-            const maxY = gameContainer.clientHeight - parseInt(target.style.height);
+            const rect = gameContainer.getBoundingClientRect();
+            const maxX = rect.width - parseInt(target.style.width);
+            const maxY = rect.height - parseInt(target.style.height);
             target.style.left = `${Math.random() * maxX}px`;
             target.style.top = `${Math.random() * maxY}px`;
         }
@@ -189,7 +193,7 @@
             createTarget();
             gameInterval = setInterval(() => {
                 updateTime();
-                if (Math.random() < 0.1) createTarget(); // 10% 機率生成新目標
+                if (Math.random() < 0.2 && targets.length < 2) createTarget(); // 20% 機率生成新目標，但保持最多2個
             }, 1000);
         }
 
@@ -197,13 +201,12 @@
             clearInterval(gameInterval);
             gameContainer.innerHTML = '';
             startBtn.disabled = false;
-            alert(`遊戲結束！你的分數是${score}分，平均反應時間為${(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(2)}毫秒。`);
+            alert(`訓練結束！你的分數是${score}分，平均反應時間為${(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(2)}毫秒。`);
         }
 
         startBtn.addEventListener('touchstart', startGame, { passive: false });
         startBtn.addEventListener('mousedown', startGame);
 
-        // 更溫和的觸摸事件處理
         gameContainer.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) {
                 e.preventDefault();
