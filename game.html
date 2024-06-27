@@ -3,34 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>反應時間訓練遊戲</title>
+    <title>專業反應時間訓練</title>
     <style>
-        body {
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
             font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #game-area {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        #game-area {
-            width: 100%;
-            max-width: 500px;
+            height: 100%;
             text-align: center;
         }
         #game-container {
             width: 100%;
-            height: 0;
-            padding-bottom: 120%; /* 高度為寬度的1.5倍 */
+            height: 100%;
             background-color: #333;
             position: relative;
             overflow: hidden;
-            border-radius: 10px;
-            touch-action: none;
+            display: none;
         }
         .target {
             width: 40px;
@@ -44,11 +40,7 @@
             transform: scale(1.2);
             opacity: 0.7;
         }
-        #score, #time, #avg-reaction-time {
-            margin: 10px 0;
-            font-size: 16px;
-        }
-        #start-btn {
+        #start-btn, #replay-btn {
             font-size: 18px;
             padding: 10px 20px;
             margin-top: 20px;
@@ -73,24 +65,36 @@
                 transform: translateY(-20px);
             }
         }
+        #results {
+            display: none;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div id="game-area">
         <h1>專業反應時間訓練</h1>
-        <div id="score">分數: 0</div>
-        <div id="time">時間: 30秒</div>
-        <div id="avg-reaction-time">平均反應時間: 0 毫秒</div>
+        <button id="start-btn">開始</button>
         <div id="game-container"></div>
-        <button id="start-btn">開始訓練</button>
+        <div id="results">
+            <h2>訓練結果</h2>
+            <p id="final-score"></p>
+            <p id="final-avg-time"></p>
+            <button id="replay-btn">再玩一次</button>
+        </div>
     </div>
 
     <script>
+        const gameArea = document.getElementById('game-area');
         const gameContainer = document.getElementById('game-container');
-        const scoreDisplay = document.getElementById('score');
-        const timeDisplay = document.getElementById('time');
-        const avgReactionTimeDisplay = document.getElementById('avg-reaction-time');
         const startBtn = document.getElementById('start-btn');
+        const replayBtn = document.getElementById('replay-btn');
+        const results = document.getElementById('results');
+        const finalScore = document.getElementById('final-score');
+        const finalAvgTime = document.getElementById('final-avg-time');
 
         let score = 0;
         let timeLeft = 30;
@@ -98,6 +102,9 @@
         let targets = [];
         let reactionTimes = [];
         let lastTargetTime;
+
+        // 音效
+        const hitSound = new Audio('data:audio/wav;base64,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');
 
         function createTarget() {
             if (targets.length >= 2) return; // 限制最多2個目標
@@ -138,8 +145,6 @@
             const reactionTime = Date.now() - lastTargetTime;
             reactionTimes.push(reactionTime);
             score++;
-            scoreDisplay.textContent = `分數: ${score}`;
-            updateAvgReactionTime();
             
             target.classList.add('hit');
             setTimeout(() => {
@@ -150,6 +155,7 @@
             
             targets = targets.filter(t => t !== target);
             createFeedback(target, reactionTime);
+            hitSound.play();
             createTarget();
         }
 
@@ -167,51 +173,36 @@
             }, 500);
         }
 
-        function updateAvgReactionTime() {
-            const avgTime = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
-            avgReactionTimeDisplay.textContent = `平均反應時間: ${avgTime.toFixed(2)} 毫秒`;
-        }
-
         function updateTime() {
             timeLeft--;
-            timeDisplay.textContent = `時間: ${timeLeft}秒`;
             if (timeLeft <= 0) {
                 endGame();
             }
         }
 
         function startGame() {
+            gameArea.querySelector('h1').style.display = 'none';
+            startBtn.style.display = 'none';
+            gameContainer.style.display = 'block';
+            results.style.display = 'none';
+
             score = 0;
             timeLeft = 30;
             targets = [];
             reactionTimes = [];
-            scoreDisplay.textContent = `分數: ${score}`;
-            timeDisplay.textContent = `時間: ${timeLeft}秒`;
-            avgReactionTimeDisplay.textContent = `平均反應時間: 0 毫秒`;
             gameContainer.innerHTML = '';
-            startBtn.disabled = true;
             createTarget();
             gameInterval = setInterval(() => {
                 updateTime();
-                if (Math.random() < 0.2 && targets.length < 2) createTarget(); // 20% 機率生成新目標，但保持最多2個
+                if (Math.random() < 0.2 && targets.length < 2) createTarget();
             }, 1000);
         }
 
         function endGame() {
             clearInterval(gameInterval);
             gameContainer.innerHTML = '';
-            startBtn.disabled = false;
-            alert(`訓練結束！你的分數是${score}分，平均反應時間為${(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(2)}毫秒。`);
-        }
-
-        startBtn.addEventListener('touchstart', startGame, { passive: false });
-        startBtn.addEventListener('mousedown', startGame);
-
-        gameContainer.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-    </script>
-</body>
-</html>
+            gameContainer.style.display = 'none';
+            results.style.display = 'block';
+            
+            const avgTime = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+            finalScore.textContent = `最終分數：${score}
