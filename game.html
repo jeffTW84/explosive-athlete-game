@@ -56,6 +56,7 @@
             color: white;
             border: none;
             border-radius: 5px;
+            touch-action: manipulation;
         }
         .feedback {
             position: absolute;
@@ -105,11 +106,16 @@
             target.style.width = `${size}px`;
             target.style.height = `${size}px`;
             positionTarget(target);
-            target.ontouchstart = (e) => { e.preventDefault(); hitTarget(target); };
-            target.onclick = () => hitTarget(target);
+            target.addEventListener('touchstart', handleTargetHit, { passive: false });
+            target.addEventListener('mousedown', handleTargetHit);
             gameContainer.appendChild(target);
             targets.push(target);
             lastTargetTime = Date.now();
+        }
+
+        function handleTargetHit(e) {
+            e.preventDefault();
+            hitTarget(e.target);
         }
 
         function positionTarget(target) {
@@ -131,9 +137,12 @@
             scoreDisplay.textContent = `分數: ${score}`;
             updateAvgReactionTime();
             
-            // Visual feedback
             target.classList.add('hit');
-            setTimeout(() => gameContainer.removeChild(target), 100);
+            setTimeout(() => {
+                if (gameContainer.contains(target)) {
+                    gameContainer.removeChild(target);
+                }
+            }, 100);
             
             targets = targets.filter(t => t !== target);
             createFeedback(target, reactionTime);
@@ -147,7 +156,11 @@
             feedback.style.left = target.style.left;
             feedback.style.top = target.style.top;
             gameContainer.appendChild(feedback);
-            setTimeout(() => gameContainer.removeChild(feedback), 500);
+            setTimeout(() => {
+                if (gameContainer.contains(feedback)) {
+                    gameContainer.removeChild(feedback);
+                }
+            }, 500);
         }
 
         function updateAvgReactionTime() {
@@ -187,11 +200,15 @@
             alert(`遊戲結束！你的分數是${score}分，平均反應時間為${(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(2)}毫秒。`);
         }
 
-        startBtn.onclick = startGame;
+        startBtn.addEventListener('touchstart', startGame, { passive: false });
+        startBtn.addEventListener('mousedown', startGame);
 
-        // 防止滾動和縮放
-        document.body.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-        document.body.addEventListener('touchend', function(e) { e.preventDefault(); }, { passive: false });
+        // 更溫和的觸摸事件處理
+        gameContainer.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
