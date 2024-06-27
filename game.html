@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>閃電反應 - 爆發力運動員訓練遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            width: 500px;
+            height: 500px;
+            background-color: #333;
+            position: relative;
+            overflow: hidden;
+        }
+        .target {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+        }
+        #score, #time, #avg-reaction-time {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        #start-btn {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-area">
+        <h1>閃電反應</h1>
+        <div id="score">分數: 0</div>
+        <div id="time">時間: 30秒</div>
+        <div id="avg-reaction-time">平均反應時間: 0 毫秒</div>
+        <div id="game-container"></div>
+        <button id="start-btn">開始遊戲</button>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const avgReactionTimeDisplay = document.getElementById('avg-reaction-time');
+        const startBtn = document.getElementById('start-btn');
+
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval;
+        let targets = [];
+        let reactionTimes = [];
+        let lastTargetTime;
+
+        function createTarget() {
+            const target = document.createElement('div');
+            target.className = 'target';
+            target.style.backgroundColor = getRandomColor();
+            target.style.left = `${Math.random() * (gameContainer.clientWidth - 50)}px`;
+            target.style.top = `${Math.random() * (gameContainer.clientHeight - 50)}px`;
+            target.onclick = () => hitTarget(target);
+            gameContainer.appendChild(target);
+            targets.push(target);
+            lastTargetTime = Date.now();
+        }
+
+        function getRandomColor() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function hitTarget(target) {
+            const reactionTime = Date.now() - lastTargetTime;
+            reactionTimes.push(reactionTime);
+            score++;
+            scoreDisplay.textContent = `分數: ${score}`;
+            updateAvgReactionTime();
+            gameContainer.removeChild(target);
+            targets = targets.filter(t => t !== target);
+            createTarget();
+        }
+
+        function updateAvgReactionTime() {
+            const avgTime = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+            avgReactionTimeDisplay.textContent = `平均反應時間: ${avgTime.toFixed(2)} 毫秒`;
+        }
+
+        function updateTime() {
+            timeLeft--;
+            timeDisplay.textContent = `時間: ${timeLeft}秒`;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            targets = [];
+            reactionTimes = [];
+            scoreDisplay.textContent = `分數: ${score}`;
+            timeDisplay.textContent = `時間: ${timeLeft}秒`;
+            avgReactionTimeDisplay.textContent = `平均反應時間: 0 毫秒`;
+            gameContainer.innerHTML = '';
+            startBtn.disabled = true;
+            createTarget();
+            gameInterval = setInterval(() => {
+                updateTime();
+                if (Math.random() < 0.1) createTarget(); // 10% 機率生成新目標
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            gameContainer.innerHTML = '';
+            startBtn.disabled = false;
+            alert(`遊戲結束！你的分數是${score}分，平均反應時間為${(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(2)}毫秒。`);
+        }
+
+        startBtn.onclick = startGame;
+    </script>
+</body>
+</html>
